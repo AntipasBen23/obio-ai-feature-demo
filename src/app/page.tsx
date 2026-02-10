@@ -5,6 +5,7 @@ import { DemoSidebar, type DemoView } from "./components/DemoSidebar";
 import { StatCard } from "./components/StatCard";
 import { EventStream } from "./components/EventStream";
 import { PersonPanel } from "./components/PersonPanel";
+import { TrustPanel } from "./components/TrustPanel";
 import { seedDemoState } from "./demo/seed";
 
 export default function Page() {
@@ -14,13 +15,25 @@ export default function Page() {
     initial.people[0]?.id ?? ""
   );
 
-  const selectedPerson = initial.people.find(
-    (p) => p.id === selectedPersonId
-  );
+  const selectedPerson = initial.people.find((p) => p.id === selectedPersonId);
+
+  // Build audit logs from "trust" lane events (frontend-only simulation)
+  const trustLogs = useMemo(() => {
+    return initial.events
+      .filter((e) => e.lane === "trust")
+      .sort((a, b) => +new Date(b.ts) - +new Date(a.ts))
+      .map((e) => ({
+        id: e.id,
+        ts: e.ts,
+        actorRole: "HRBP" as const,
+        action: e.title,
+        target:
+          initial.people.find((p) => p.id === e.personId)?.name ?? "Unknown",
+      }));
+  }, [initial]);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100">
-      {/* FULL-SCREEN FEATURE ENTRY */}
       <div className="mx-auto max-w-[1600px] px-4 py-6">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
           {/* LEFT: NAV + PEOPLE */}
@@ -73,7 +86,7 @@ export default function Page() {
 
           {/* RIGHT: CORE FEATURE */}
           <main className="space-y-4">
-            {/* TOP STATS (signal overview) */}
+            {/* TOP STATS */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <StatCard
                 title="Active Workflows"
@@ -95,40 +108,43 @@ export default function Page() {
 
             {/* MAIN SPLIT */}
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_440px]">
-              {/* EVENT STREAM */}
+              {/* LEFT PANEL: Event stream OR Trust panel */}
               <section className="rounded-2xl border border-neutral-800 bg-neutral-900/30 p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-semibold">
-                      Signal Stream · {view}
+                      {view === "trust" ? "Trust · Compliance" : `Signal Stream · ${view}`}
                     </div>
                     <div className="mt-1 text-xs text-neutral-400">
-                      Real-time HR signals across ATS, chat, interviews,
-                      onboarding.
+                      {view === "trust"
+                        ? "RBAC, audit logs, and data retention controls."
+                        : "Real-time HR signals across ATS, chat, interviews, onboarding."}
                     </div>
                   </div>
 
                   <span className="rounded-full bg-lime-400/15 px-2 py-1 text-[10px] font-semibold text-lime-200 ring-1 ring-lime-400/25">
-                    Signal Engine
+                    {view === "trust" ? "Enterprise" : "Signal Engine"}
                   </span>
                 </div>
 
                 <div className="mt-4">
-                  <EventStream
-                    view={view}
-                    events={initial.events}
-                    people={initial.people}
-                    selectedPersonId={selectedPersonId}
-                    onSelectPerson={setSelectedPersonId}
-                  />
+                  {view === "trust" ? (
+                    <TrustPanel logs={trustLogs} />
+                  ) : (
+                    <EventStream
+                      view={view}
+                      events={initial.events}
+                      people={initial.people}
+                      selectedPersonId={selectedPersonId}
+                      onSelectPerson={setSelectedPersonId}
+                    />
+                  )}
                 </div>
               </section>
 
-              {/* PERSON INTELLIGENCE */}
+              {/* RIGHT PANEL: PERSON INTELLIGENCE */}
               <aside className="rounded-2xl border border-neutral-800 bg-neutral-900/30 p-4">
-                <div className="text-sm font-semibold">
-                  Talent Intelligence
-                </div>
+                <div className="text-sm font-semibold">Talent Intelligence</div>
                 <div className="mt-1 text-xs text-neutral-400">
                   Risk, drivers, and recommended actions.
                 </div>
@@ -137,17 +153,11 @@ export default function Page() {
                   {selectedPerson ? (
                     <PersonPanel
                       person={selectedPerson}
-                      signals={
-                        initial.signalsByPersonId[selectedPerson.id]
-                      }
+                      signals={initial.signalsByPersonId[selectedPerson.id]}
                       recommendations={
-                        initial.recommendationsByPersonId[
-                          selectedPerson.id
-                        ]
+                        initial.recommendationsByPersonId[selectedPerson.id]
                       }
-                      workflows={
-                        initial.workflowsByPersonId[selectedPerson.id]
-                      }
+                      workflows={initial.workflowsByPersonId[selectedPerson.id]}
                     />
                   ) : (
                     <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-4 text-sm text-neutral-300">
