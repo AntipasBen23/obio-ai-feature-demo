@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DemoSidebar, type DemoView } from "./_components/DemoSidebar";
-import { StatCard } from "./_components/StatCard";
-import { EventStream } from "./_components/EventStream";
-import { PersonPanel } from "./_components/PersonPanel";
-import { seedDemoState } from "./_demo/seed";
+import { DemoSidebar, type DemoView } from "./components/DemoSidebar";
+import { StatCard } from "./components/StatCard";
+import { EventStream } from "./components/EventStream";
+import { PersonPanel } from "./components/PersonPanel";
+import { seedDemoState } from "./demo/seed";
 
 export default function Page() {
   const initial = useMemo(() => seedDemoState(), []);
